@@ -1,0 +1,284 @@
+@charset "UTF-8";
+
+/* CSS Variables */
+:root {
+  --bg-dark: #060d10;
+  --panel-bg: rgba(13, 26, 18, 0.95); /* 地図が少し透けるように調整 */
+  --border-dark: #1a472a;
+  --lime: #b5e550;
+  --blue: #4a9ae8;
+  --gold: #f0c040;
+  --red: #e74c3c; /* 北中米用追加 */
+  --orange: #ff6b35;
+  --gray: #aaaaaa;
+  --text-main: #e0e0e0;
+  --text-muted: #8c9b92;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Noto Sans JP', sans-serif;
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Header */
+header {
+  background-color: var(--panel-bg);
+  border-bottom: 2px solid var(--border-dark);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 20px;
+  height: 60px;
+  z-index: 1000;
+}
+
+header h1 {
+  font-family: 'Bebas Neue', cursive;
+  color: var(--lime);
+  font-size: 28px;
+  letter-spacing: 2px;
+}
+
+.counter {
+  font-family: 'Oswald', sans-serif;
+  font-size: 16px;
+  color: var(--text-muted);
+}
+.counter span {
+  color: var(--lime);
+  font-weight: 600;
+  font-size: 20px;
+  margin: 0 4px;
+}
+
+/* Main Container */
+#main-container {
+  display: flex;
+  flex: 1;
+  height: calc(100vh - 60px);
+}
+
+/* Sidebar */
+#sidebar {
+  width: 320px;
+  background-color: var(--panel-bg);
+  border-right: 1px solid var(--border-dark);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  box-shadow: 2px 0 10px rgba(0,0,0,0.5); /* 航空写真に対して浮き立たせる */
+}
+
+.sidebar-header {
+  padding: 15px;
+  border-bottom: 1px solid var(--border-dark);
+}
+
+.sidebar-header h2 {
+  font-family: 'Oswald', sans-serif;
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: var(--text-main);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.filter-btn {
+  background: var(--bg-dark);
+  color: var(--text-muted);
+  border: 1px solid var(--border-dark);
+  padding: 6px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: 0.2s ease;
+  font-family: 'Noto Sans JP', sans-serif;
+}
+
+.filter-btn:hover {
+  border-color: var(--lime);
+  color: var(--text-main);
+}
+
+.filter-btn.active {
+  background: var(--lime);
+  color: var(--bg-dark);
+  border-color: var(--lime);
+  font-weight: bold;
+}
+
+#stadium-list {
+  flex: 1;
+  overflow-y: auto;
+  list-style: none;
+}
+
+#stadium-list::-webkit-scrollbar {
+  width: 6px;
+}
+#stadium-list::-webkit-scrollbar-thumb {
+  background-color: var(--border-dark);
+  border-radius: 3px;
+}
+
+.list-item {
+  padding: 12px 15px;
+  border-bottom: 1px solid var(--border-dark);
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.list-item:hover {
+  background: var(--border-dark);
+}
+
+.list-item-title {
+  font-weight: bold;
+  font-size: 14px;
+  margin-bottom: 4px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.visited-badge {
+  font-size: 10px;
+  background: var(--lime);
+  color: var(--bg-dark);
+  padding: 2px 6px;
+  border-radius: 10px;
+  display: none;
+}
+.list-item.is-visited .visited-badge {
+  display: inline-block;
+}
+
+.list-item-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Map */
+#map {
+  flex: 1;
+  background-color: #111; /* 読み込み時の背景 */
+}
+
+/* Custom Leaflet Popup */
+.leaflet-popup-content-wrapper {
+  background: var(--panel-bg);
+  border: 1px solid var(--lime);
+  color: var(--text-main);
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+}
+.leaflet-popup-tip {
+  background: var(--panel-bg);
+  border: 1px solid var(--lime);
+}
+.leaflet-popup-close-button {
+  color: var(--text-main) !important;
+}
+.leaflet-popup-content {
+  margin: 15px;
+  width: 260px !important;
+}
+
+/* Popup internal layout */
+.popup-title {
+  font-size: 16px;
+  font-weight: bold;
+  border-bottom: 1px solid var(--border-dark);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.popup-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 12px;
+}
+
+.popup-grid div {
+  background: var(--bg-dark);
+  padding: 6px;
+  border-radius: 4px;
+}
+
+.popup-grid span {
+  display: block;
+  color: var(--text-muted);
+  font-size: 10px;
+  margin-bottom: 2px;
+}
+
+.popup-memo {
+  font-style: italic;
+  font-size: 12px;
+  color: #b0c4b1;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.toggle-visited-btn {
+  width: 100%;
+  padding: 8px;
+  background: transparent;
+  border: 1px solid var(--lime);
+  color: var(--lime);
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: 0.3s;
+}
+.toggle-visited-btn.visited {
+  background: var(--lime);
+  color: var(--bg-dark);
+}
+
+/* Custom Legend */
+.map-legend {
+  background: rgba(13, 26, 18, 0.85);
+  border: 1px solid var(--border-dark);
+  padding: 10px 15px;
+  border-radius: 8px;
+  color: var(--text-main);
+  font-size: 12px;
+  line-height: 1.5;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.5);
+}
+.legend-title {
+  font-family: 'Oswald', sans-serif;
+  color: var(--lime);
+  margin-bottom: 5px;
+  font-size: 14px;
+}
+.legend-section { margin-bottom: 10px; }
+.legend-item { display: flex; align-items: center; margin-bottom: 4px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
+.legend-color { width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; box-shadow: 0 0 2px rgba(255,255,255,0.3); }
+.legend-size { border-radius: 50%; background: var(--gray); margin-right: 8px; display: inline-block; }
+
+/* Tooltip */
+.leaflet-tooltip {
+  background: rgba(6, 13, 16, 0.9);
+  border: 1px solid var(--border-dark);
+  color: #fff;
+  font-weight: bold;
+}

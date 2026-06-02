@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>⚽ STADIUM MAP</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Noto+Sans+JP:wght@400;700&family=Oswald:wght@400;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <header>
+    <h1>⚽ STADIUM MAP</h1>
+    <div class="counter">
+      Visited: <span id="count-visited">0</span> / <span id="count-total">0</span>
+    </div>
+  </header>
+
+  <div id="main-container">
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <h2>スタジアム一覧</h2>
+        <div class="filters" id="filter-container">
+          <button class="filter-btn active" data-filter="ALL">ALL</button>
+          <button class="filter-btn" data-filter="日本">日本</button>
+          <button class="filter-btn" data-filter="欧州">欧州</button>
+          <button class="filter-btn" data-filter="南米">南米</button>
+          <button class="filter-btn" data-filter="北中米">北中米</button>
+          <button class="filter-btn" data-filter="中東・アジア">中東・アジア</button>
+          <button class="filter-btn" data-filter="VISITED">訪問済み</button>
+        </div>
+      </div>
+      <ul id="stadium-list">
+        </ul>
+    </aside>
+
+    <div id="map"></div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  
+  <script>
+    // -----------------------------------------------------------------
+    // 1. Data Definition
+    // -----------------------------------------------------------------
+    // ※画像の直リンクエラーを防ぐため、安定したフリー素材のURLを仮設定しています。
+    // 実際にはWikipedia等の画像URL（https://upload.wikimedia.org/...）に差し替えてください。
+    const placeholderImg = "https://images.unsplash.com/photo-1522778119026-d647f0596c20?auto=format&fit=crop&w=400&q=80";
+
+    const rawStadiumsData = [
+      // --- 日本 ---
+      { name: "国立競技場", nameEn: "Japan National Stadium", lat: 35.6778, lng: 139.7145, capacity: 67750, built: 2019, country: "日本", city: "東京", league: "日本代表 / Jリーグ", club: "-", memo: "2020年東京オリンピックのメインスタジアム。木材を多用した「杜のスタジアム」がコンセプト。", region: "日本", flag: "🇯🇵", image: placeholderImg, visited: false },
+      { name: "埼玉スタジアム2002", nameEn: "Saitama Stadium 2002", lat: 35.9032, lng: 139.7162, capacity: 63700, built: 2001, country: "日本", city: "さいたま", league: "Jリーグ", club: "浦和レッズ", memo: "日本最大のサッカー専用スタジアム。熱狂的なサポーターが作り出す雰囲気は圧巻。", region: "日本", flag: "🇯🇵", image: placeholderImg, visited: false },
+      { name: "日産スタジアム", nameEn: "Nissan Stadium", lat: 35.5100, lng: 139.6062, capacity: 72327, built: 1998, country: "日本", city: "横浜", league: "Jリーグ", club: "横浜F・マリノス", memo: "2002年W杯決勝の舞台。日本国内で最大規模の収容人数を誇る。", region: "日本", flag: "🇯🇵", image: placeholderImg, visited: false },
+      
+      // --- 欧州 ---
+      { name: "カンプ・ノウ", nameEn: "Spotify Camp Nou", lat: 41.3809, lng: 2.1228, capacity: 99354, built: 1957, country: "スペイン", city: "バルセロナ", league: "ラ・リーガ", club: "FCバルセロナ", memo: "欧州最大のスタジアム。「クラブ以上の存在」を体現するサッカーの聖地。", region: "欧州", flag: "🇪🇸", image: placeholderImg, visited: false },
+      { name: "サンティアゴ・ベルナベウ", nameEn: "Santiago Bernabéu", lat: 40.4531, lng: -3.6883, capacity: 81044, built: 1947, country: "スペイン", city: "マドリード", league: "ラ・リーガ", club: "レアル・マドリード", memo: "王者の風格漂う巨大スタジアム。急勾配のスタンドが特徴的。", region: "欧州", flag: "🇪🇸", image: placeholderImg, visited: false },
+      { name: "ウェンブリー・スタジアム", nameEn: "Wembley Stadium", lat: 51.5560, lng: -0.2795, capacity: 90000, built: 2007, country: "イギリス", city: "ロンドン", league: "イングランド代表", club: "-", memo: "サッカーの母国の聖地。巨大なアーチがスタジアムのシンボルとなっている。", region: "欧州", flag: "🇬🇧", image: placeholderImg, visited: false },
+      { name: "オールド・トラッフォード", nameEn: "Old Trafford", lat: 53.4631, lng: -2.2913, capacity: 74310, built: 1910, country: "イギリス", city: "マンチェスター", league: "プレミアリーグ", club: "マンチェスター・U", memo: "「夢の劇場（シアター・オブ・ドリームス）」と呼ばれる歴史的スタジアム。", region: "欧州", flag: "🇬🇧", image: placeholderImg, visited: false },
+      { name: "アンフィールド", nameEn: "Anfield", lat: 53.4308, lng: -2.9608, capacity: 61276, built: 1884, country: "イギリス", city: "リヴァプール", league: "プレミアリーグ", club: "リヴァプールFC", memo: "「You'll Never Walk Alone」の大合唱が響き渡る、世界屈指の熱狂的スタジアム。", region: "欧州", flag: "🇬🇧", image: placeholderImg, visited: false },
+      { name: "アリアンツ・アレーナ", nameEn: "Allianz Arena", lat: 48.2188, lng: 11.6247, capacity: 75024, built: 2005, country: "ドイツ", city: "ミュンヘン", league: "ブンデスリーガ", club: "バイエルン・ミュンヘン", memo: "外観がフルカラーで発光する美しいデザインのスタジアム。", region: "欧州", flag: "🇩🇪", image: placeholderImg, visited: false },
+      { name: "サン・シーロ", nameEn: "San Siro", lat: 45.4781, lng: 9.1239, capacity: 80018, built: 1926, country: "イタリア", city: "ミラノ", league: "セリエA", club: "ACミラン / インテル", memo: "螺旋状の巨大なスロープが特徴的な、イタリアサッカーの殿堂。", region: "欧州", flag: "🇮🇹", image: placeholderImg, visited: false },
+      { name: "スタディオ・ジュゼッペ・シニガーリャ", nameEn: "Stadio Giuseppe Sinigaglia", lat: 45.8119, lng: 9.0750, capacity: 13602, built: 1927, country: "イタリア", city: "コモ", league: "セリエA", club: "コモ1907", memo: "コモ湖のすぐ湖畔に位置する風光明媚なスタジアム。ピッチのすぐそばに広がる湖の絶景が魅力。", region: "欧州", flag: "🇮🇹", image: placeholderImg, visited: false },
+      
+      // --- 南米 ---
+      { name: "マラカナン", nameEn: "Maracanã Stadium", lat: -22.9121, lng: -43.2301, capacity: 78838, built: 1950, country: "ブラジル", city: "リオデジャネイロ", league: "ブラジル全国選手権", club: "フラメンゴ / フルミネンセ", memo: "かつては20万人を収容した伝説のスタジアム。「マラカナンの悲劇」の舞台。", region: "南米", flag: "🇧🇷", image: placeholderImg, visited: false },
+      { name: "ラ・ボンボネーラ", nameEn: "La Bombonera", lat: -34.6356, lng: -58.3647, capacity: 54000, built: 1940, country: "アルゼンチン", city: "ブエノスアイレス", league: "プリメーラ・ディビシオン", club: "ボカ・ジュニアーズ", memo: "「チョコレート箱」を意味する四角い形状。歓声でスタジアムが揺れると言われる。", region: "南米", flag: "🇦🇷", image: placeholderImg, visited: false },
+      { name: "エル・モヌメンタル", nameEn: "Estadio Monumental", lat: -34.5453, lng: -58.4497, capacity: 84567, built: 1938, country: "アルゼンチン", city: "ブエノスアイレス", league: "プリメーラ・ディビシオン", club: "リーベル・プレート", memo: "南米最大級の収容人数を誇る。アルゼンチン代表のメインスタジアム。", region: "南米", flag: "🇦🇷", image: placeholderImg, visited: false },
+      
+      // --- 北中米 (2026 W杯会場) ---
+      { name: "エスタディオ・アステカ", nameEn: "Estadio Azteca", lat: 19.3029, lng: -99.1505, capacity: 87523, built: 1966, country: "メキシコ", city: "メキシコシティ", league: "W杯会場 / リーガMX", club: "クラブ・アメリカ", memo: "史上初、3度目のW杯開幕戦を開催する伝説のスタジアム。マラドーナの「神の手」の舞台。", region: "北中米", flag: "🇲🇽", image: placeholderImg, visited: false },
+      { name: "メットライフ・スタジアム", nameEn: "MetLife Stadium", lat: 40.8128, lng: -74.0742, capacity: 82500, built: 2010, country: "アメリカ", city: "ニューヨーク/ニュージャージー", league: "W杯会場 / NFL", club: "ジャイアンツ / ジェッツ", memo: "2026年W杯決勝戦の開催スタジアム。巨大なボウル型の外観が特徴的。", region: "北中米", flag: "🇺🇸", image: placeholderImg, visited: false },
+      { name: "ソファイ・スタジアム", nameEn: "SoFi Stadium", lat: 33.9534, lng: -118.3387, capacity: 70240, built: 2020, country: "アメリカ", city: "ロサンゼルス", league: "W杯会場 / NFL", club: "ラムズ / チャージャーズ", memo: "総工費約5000億円超の超最新鋭スタジアム。巨大なリング状のビジョンが圧巻。", region: "北中米", flag: "🇺🇸", image: placeholderImg, visited: false },
+      { name: "AT&Tスタジアム", nameEn: "AT&T Stadium", lat: 32.7473, lng: -97.0945, capacity: 80000, built: 2009, country: "アメリカ", city: "ダラス", league: "W杯会場 / NFL", club: "ダラス・カウボーイズ", memo: "開閉式屋根とピッチ上空の巨大スクリーンを持つ、アメリカ最大規模のドーム型スタジアム。", region: "北中米", flag: "🇺🇸", image: placeholderImg, visited: false },
+      { name: "BCプレイス", nameEn: "BC Place", lat: 49.2767, lng: -123.1119, capacity: 54500, built: 1983, country: "カナダ", city: "バンクーバー", league: "W杯会場 / MLS", club: "バンクーバー・ホワイトキャップス", memo: "カナダを代表するスタジアム。2011年に大規模改修され、美しい開閉式屋根が設置された。", region: "北中米", flag: "🇨🇦", image: placeholderImg, visited: false },
+      { name: "メルセデス＝ベンツ・スタジアム", nameEn: "Mercedes-Benz Stadium", lat: 33.7555, lng: -84.4000, capacity: 71000, built: 2017, country: "アメリカ", city: "アトランタ", league: "W杯会場 / MLS / NFL", club: "アトランタ・ユナイテッド / ファルコンズ", memo: "カメラの絞りのように開閉する屋根と、ピッチ上空のリング状巨大ビジョン（ハローボード）が特徴の超最新鋭ドーム。", region: "北中米", flag: "🇺🇸", image: placeholderImg, visited: false },
+
+      // --- 中東・アジア ---
+      { name: "ルサイル・スタジアム", nameEn: "Lusail Stadium", lat: 25.4208, lng: 51.4903, capacity: 88966, built: 2021, country: "カタール", city: "ルサイル", league: "W杯会場", club: "カタール代表", memo: "2022年W杯決勝の舞台。アラブの伝統的なボウルをモチーフにした黄金の外観。", region: "中東・アジア", flag: "🇶🇦", image: placeholderImg, visited: false },
+      { name: "キング・ファハド国際スタジアム", nameEn: "King Fahd Int. Stadium", lat: 24.7886, lng: 46.8394, capacity: 68752, built: 1987, country: "サウジアラビア", city: "リヤド", league: "サウジ・プロリーグ", club: "アル・ヒラル", memo: "砂漠のテントを模した巨大な屋根が特徴。中東屈指の規模を誇る。", region: "中東・アジア", flag: "🇸🇦", image: placeholderImg, visited: false }
+    ];
+
+    // Give each stadium a unique ID
+    const stadiums = rawStadiumsData.map((s, index) => ({ ...s, id: index }));
+
+    // -----------------------------------------------------------------
+    // 2. Map Configuration
+    // -----------------------------------------------------------------
+    const map = L.map('map', {
+      center: [25, -10],
+      zoom: 2.5,
+      minZoom: 2,
+      worldCopyJump: true
+    });
+
+    L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', {
+      attribution: '&copy; Google',
+      maxZoom: 20
+    }).addTo(map);
+
+    const markersLayer = L.layerGroup().addTo(map);
+    const markerRefs = {};
+
+    // -----------------------------------------------------------------
+    // 3. Helpers (Colors & Sizes)
+    // -----------------------------------------------------------------
+    const getRegionColor = (region) => {
+      switch (region) {
+        case '日本': return '#b5e550';
+        case '欧州': return '#4a9ae8';
+        case '南米': return '#f0c040';
+        case '北中米': return '#e74c3c';
+        case '中東・アジア': return '#ff6b35';
+        default: return '#aaaaaa';
+      }
+    };
+
+    const getCapacityRadius = (cap) => {
+      if (cap < 30000) return 6;
+      if (cap < 60000) return 10;
+      if (cap < 90000) return 14;
+      return 18;
+    };
+
+    // -----------------------------------------------------------------
+    // 4. Core Functions
+    // -----------------------------------------------------------------
+    let currentFilter = 'ALL';
+
+    function updateCounters() {
+      const total = stadiums.length;
+      const visitedCount = stadiums.filter(s => s.visited).length;
+      document.getElementById('count-total').innerText = total;
+      document.getElementById('count-visited').innerText = visitedCount;
+    }
+
+    window.toggleVisited = function(id) {
+      const stadium = stadiums[id];
+      stadium.visited = !stadium.visited;
+      
+      updateCounters();
+      
+      const marker = markerRefs[id];
+      if (marker) {
+        const fillColor = getRegionColor(stadium.region);
+        marker.setStyle({
+          color: stadium.visited ? '#ffffff' : 'transparent',
+          weight: stadium.visited ? 2 : 0,
+          fillColor: fillColor,
+          fillOpacity: 0.9 
+        });
+      }
+
+      const btn = document.getElementById(`btn-toggle-${id}`);
+      if (btn) {
+        if (stadium.visited) {
+          btn.classList.add('visited');
+          btn.innerText = '✓ 訪問済みから外す';
+        } else {
+          btn.classList.remove('visited');
+          btn.innerText = '訪問済みにする';
+        }
+      }
+
+      renderSidebar();
+      
+      if (currentFilter === 'VISITED' && !stadium.visited) {
+        if (marker) markersLayer.removeLayer(marker);
+      }
+    };
+
+    // ★ 変更箇所: ポップアップ内に <img> タグを追加しました
+    function generatePopupContent(stadium) {
+      const isVis = stadium.visited;
+      return `
+        <div class="popup-title">${stadium.flag} ${stadium.name}</div>
+        <img src="${stadium.image}" alt="${stadium.name}" class="popup-image">
+        <div class="popup-grid">
+          <div><span>収容人数</span>${stadium.capacity.toLocaleString()} 人</div>
+          <div><span>建設年</span>${stadium.built} 年</div>
+          <div><span>リーグ/大会</span>${stadium.league}</div>
+          <div><span>クラブ</span>${stadium.club}</div>
+        </div>
+        <p class="popup-memo">${stadium.memo}</p>
+        <button id="btn-toggle-${stadium.id}" 
+                class="toggle-visited-btn ${isVis ? 'visited' : ''}" 
+                onclick="toggleVisited(${stadium.id})">
+          ${isVis ? '✓ 訪問済みから外す' : '訪問済みにする'}
+        </button>
+      `;
+    }
+
+    function renderMap() {
+      markersLayer.clearLayers();
+      
+      const filtered = stadiums.filter(s => {
+        if (currentFilter === 'ALL') return true;
+        if (currentFilter === 'VISITED') return s.visited;
+        return s.region === currentFilter;
+      });
+
+      filtered.forEach(stadium => {
+        const fillColor = getRegionColor(stadium.region);
+        const radius = getCapacityRadius(stadium.capacity);
+        
+        const marker = L.circleMarker([stadium.lat, stadium.lng], {
+          radius: radius,
+          fillColor: fillColor,
+          color: stadium.visited ? '#ffffff' : 'transparent',
+          weight: stadium.visited ? 2 : 0,
+          fillOpacity: 0.9
+        });
+
+        marker.bindTooltip(stadium.name, { direction: 'top' });
+        marker.bindPopup(generatePopupContent(stadium));
+        
+        markerRefs[stadium.id] = marker;
+        marker.addTo(markersLayer);
+      });
+    }
+
+    window.flyToStadium = function(id) {
+      const s = stadiums[id];
+      map.flyTo([s.lat, s.lng], 17, { duration: 1.5 });
+      
+      setTimeout(() => {
+        if (markerRefs[id]) {
+          markerRefs[id].openPopup();
+        }
+      }, 1600);
+    };
+
+    function renderSidebar() {
+      const ul = document.getElementById('stadium-list');
+      ul.innerHTML = '';
+
+      const filtered = stadiums.filter(s => {
+        if (currentFilter === 'ALL') return true;
+        if (currentFilter === 'VISITED') return s.visited;
+        return s.region === currentFilter;
+      });
+
+      filtered.forEach(s => {
+        const li = document.createElement('li');
+        li.className = `list-item ${s.visited ? 'is-visited' : ''}`;
+        li.onclick = () => flyToStadium(s.id);
+        
+        li.innerHTML = `
+          <div class="list-item-title">
+            <span>${s.flag} ${s.name}</span>
+            <span class="visited-badge">VISITED</span>
+          </div>
+          <div class="list-item-sub">
+            ${s.city} | ${s.capacity.toLocaleString()}人
+          </div>
+        `;
+        ul.appendChild(li);
+      });
+    }
+
+    // -----------------------------------------------------------------
+    // 5. Setup & Listeners
+    // -----------------------------------------------------------------
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentFilter = e.target.getAttribute('data-filter');
+        
+        renderMap();
+        renderSidebar();
+        
+        if(currentFilter === 'ALL') {
+          map.flyTo([25, -10], 2.5, { duration: 1 });
+        }
+      });
+    });
+
+    const LegendControl = L.Control.extend({
+      options: { position: 'bottomleft' },
+      onAdd: function () {
+        const div = L.DomUtil.create('div', 'map-legend');
+        div.innerHTML = `
+          <div class="legend-section">
+            <div class="legend-title">MARKER SIZE (Capacity)</div>
+            <div class="legend-item"><span class="legend-size" style="width:12px; height:12px;"></span> ～30,000人</div>
+            <div class="legend-item"><span class="legend-size" style="width:20px; height:20px;"></span> 30,000～60,000人</div>
+            <div class="legend-item"><span class="legend-size" style="width:28px; height:28px;"></span> 60,000～90,000人</div>
+            <div class="legend-item"><span class="legend-size" style="width:36px; height:36px;"></span> 90,000人～</div>
+          </div>
+          <div class="legend-section">
+            <div class="legend-title">REGION COLOR</div>
+            <div class="legend-item"><span class="legend-color" style="background:#b5e550;"></span> 日本</div>
+            <div class="legend-item"><span class="legend-color" style="background:#4a9ae8;"></span> 欧州</div>
+            <div class="legend-item"><span class="legend-color" style="background:#f0c040;"></span> 南米</div>
+            <div class="legend-item"><span class="legend-color" style="background:#e74c3c;"></span> 北中米 (W杯)</div>
+            <div class="legend-item"><span class="legend-color" style="background:#ff6b35;"></span> 中東・アジア</div>
+            <div class="legend-item" style="margin-top:8px;">
+              <span class="legend-color" style="background:transparent; border:2px solid white;"></span> 訪問済み
+            </div>
+          </div>
+        `;
+        L.DomEvent.disableClickPropagation(div);
+        return div;
+      }
+    });
+    map.addControl(new LegendControl());
+
+    updateCounters();
+    renderMap();
+    renderSidebar();
+
+  </script>
+</body>
+</html>
