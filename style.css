@@ -196,7 +196,7 @@ header h1 {
 }
 .leaflet-popup-content {
   margin: 15px;
-  width: 260px !important;
+  width: 260px !important; /* ポップアップの幅 */
 }
 
 /* Popup internal layout */
@@ -206,6 +206,20 @@ header h1 {
   border-bottom: 1px solid var(--border-dark);
   padding-bottom: 6px;
   margin-bottom: 8px;
+}
+
+/* ★ ポップアップ内の画像スタイルを追加・修正 */
+.popup-image {
+  width: 100%;          /* 親要素（.leaflet-popup-content, 260px）の幅一杯に広げる */
+  height: auto;         /* アスペクト比を維持して高さを自動調整 */
+  max-height: 180px;     /* 高さを制限（縦長になりすぎないように。お好みで調整可） */
+  object-fit: cover;    /* 領域を埋めるようにトリミング */
+  border-radius: 4px;   /* 角を丸く */
+  margin-top: 8px;      /* タイトルとの間隔 */
+  margin-bottom: 12px;  /* グリッドとの間隔 */
+  display: block;       /* ブロック要素にして中央配置しやすくする */
+  margin-left: auto;     /* 中央配置 */
+  margin-right: auto;    /* 中央配置 */
 }
 
 .popup-grid {
